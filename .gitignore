@@ -1,0 +1,29 @@
+# Shared ignores for the consolidated stayspot repository
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.fleet/
+
+# Logs and caches
+*.log
+npm-debug.log*
+yarn-error.log*
+.phpunit.result.cache
+coverage/
+
+# Dependency and build outputs
+**/node_modules/
+**/vendor/
+**/dist/
+**/build/
+**/public/build/
+**/public/hot/
+**/public/storage/
+
+# Environment files
+.env
+.env.backup
+.env.production
