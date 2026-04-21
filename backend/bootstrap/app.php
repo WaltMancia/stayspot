@@ -1,5 +1,33 @@
 <?php
 
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        // Aplicamos los headers de seguridad a todas las peticiones
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Rate limiting para la API
+        $middleware->throttleApi();
+
+        // Alias para usar en rutas: middleware('role:host')
+        $middleware->alias([
+        'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
+
 /*
 |--------------------------------------------------------------------------
 | Create The Application
