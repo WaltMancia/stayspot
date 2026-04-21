@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -76,5 +77,17 @@ class User extends Authenticatable
     public function isGuest(): bool
     {
         return $this->role === 'guest';
+    }
+
+    // Un host tiene muchas reseñas A TRAVÉS de sus espacios
+    // hasManyThrough(ModelFinal, ModelIntermedio, FK_en_intermedio, FK_en_final)
+    public function receivedReviews(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Review::class,   // modelo final
+            Space::class,    // modelo intermedio
+            'host_id',       // FK en spaces que apunta a users
+            'space_id',      // FK en reviews que apunta a spaces
+        );
     }
 }

@@ -2,41 +2,79 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSpaceRequest;
+use App\Http\Requests\UpdateSpaceRequest;
+use App\Http\Resources\SpaceResource;
 use App\Models\Space;
+use App\Services\SpaceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SpaceController extends Controller
 {
-    public function index(Request $request)
+    // Inyección de dependencias — Laravel resuelve SpaceService automáticamente
+    public function __construct(
+        private SpaceService $spaceService
+    ) {}
+
+    // GET /api/spaces
+    public function index(Request $request): AnonymousResourceCollection
     {
-        // Filtros opcionales desde query string
-        $city = $request->query('city');
-        $min  = $request->query('min_price');
-        $max  = $request->query('max_price');
+        // $request->query() equivale a req.query en Express
+        $spaces = $this->spaceService->search($request->query());
 
-        // retornar todos los espacios
-        $spaces = Space::all();
-
-        return response()->json($spaces);
+        // SpaceResource::collection() aplica el resource a cada elemento
+        return SpaceResource::collection($spaces);
     }
 
-    public function show($id)
+    // GET /api/spaces/{space}
+    // Laravel resuelve automáticamente el modelo por su ID (Route Model Binding)
+    // Si no existe → 404 automático
+    public function show(int $id): SpaceResource
     {
-        // Lógica para mostrar un espacio específico
+        $space = $this->spaceService->findWithDetails($id);
+        return new SpaceResource($space);
     }
 
-    public function store(Request $request)
+    // POST /api/spaces
+    public function store(StoreSpaceRequest $request): JsonResponse
     {
-        // Lógica para crear un nuevo espacio
+        // validated() devuelve solo los datos que pasaron la validación
+        // Nunca uses $request->all() — podría incluir campos no esperados
+        $space = $this->spaceService->createSpace(
+            $request->validated(),
+            $request->user()
+        );
+
+        return (new SpaceResource($space))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    public function update(Request $request, $id)
-    {
-        // Lógica para actualizar un espacio existente
+    // PUT /api/spaces/{space}
+    public function update(
+        UpdateSpaceRequest $request,
+        Space $space    // Route Model Binding — Laravel busca el espacio por ID
+    ): SpaceResource {
+        // authorize() verifica con la Policy que el usuario puede editar este espacio
+        $this->authorize('update', $space);
+
+        $updated = $this->spaceService->updateSpace(
+            $space,
+            $request->validated()
+        );
+
+        return new SpaceResource($updated);
     }
 
-    public function destroy($id)
+    // DELETE /api/spaces/{space}
+    public function destroy(Space $space): JsonResponse
     {
-        // Lógica para eliminar un espacio
+        $this->authorize('delete', $space);
+        $this->spaceService->deleteSpace($space);
+
+        // 204 No Content — éxito sin cuerpo de respuesta
+        return response()->json(null, 204);
     }
 }
