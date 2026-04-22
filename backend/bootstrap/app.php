@@ -21,11 +21,71 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Alias para usar en rutas: middleware('role:host')
         $middleware->alias([
-        'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Cuando el token no existe o es inválido → 401
+        $exceptions->render(function (
+            \Illuminate\Auth\AuthenticationException $e,
+            $request
+        ) {
+            if ($request->expectsJson() || str_starts_with($request->path(), 'api/')) {
+                return response()->json([
+                    'message' => 'No autenticado. Por favor inicia sesión.',
+                ], 401);
+            }
+        });
+
+        // Cuando el usuario no tiene permisos → 403
+        $exceptions->render(function (
+            \Illuminate\Auth\Access\AuthorizationException $e,
+            $request
+        ) {
+            if ($request->expectsJson() || str_starts_with($request->path(), 'api/')) {
+                return response()->json([
+                    'message' => 'No tienes permisos para realizar esta acción.',
+                ], 403);
+            }
+        });
+
+        // Cuando el modelo no existe → 404
+        $exceptions->render(function (
+            \Illuminate\Database\Eloquent\ModelNotFoundException $e,
+            $request
+        ) {
+            if ($request->expectsJson() || str_starts_with($request->path(), 'api/')) {
+                $model = class_basename($e->getModel());
+                return response()->json([
+                    'message' => "{$model} no encontrado.",
+                ], 404);
+            }
+        });
+
+        // Errores de validación → 422
+        $exceptions->render(function (
+            \Illuminate\Validation\ValidationException $e,
+            $request
+        ) {
+            if ($request->expectsJson() || str_starts_with($request->path(), 'api/')) {
+                return response()->json([
+                    'message' => 'Los datos proporcionados no son válidos.',
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
+        });
+
+        // Rate limit excedido → 429
+        $exceptions->render(function (
+            \Illuminate\Http\Exceptions\ThrottleRequestsException $e,
+            $request
+        ) {
+            if ($request->expectsJson() || str_starts_with($request->path(), 'api/')) {
+                return response()->json([
+                    'message' => 'Demasiadas peticiones. Intenta de nuevo en unos minutos.',
+                ], 429);
+            }
+        });
     })->create();
 
 /*

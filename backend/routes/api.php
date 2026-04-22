@@ -8,26 +8,33 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // ── Rutas públicas ────────────────────────────────────────────
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login',    [AuthController::class, 'login']);
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:login');
+});
 
 // Espacios — lectura pública
 Route::get('/spaces',         [SpaceController::class, 'index']);
 Route::get('/spaces/{space}', [SpaceController::class, 'show']);
 
+// Espacios de un host — público
+Route::get('/users/{user}/spaces', [UserController::class, 'spaces']);
+
 // ── Rutas protegidas ──────────────────────────────────────────
-// middleware('auth:sanctum') → requiere token válido de Sanctum
 Route::middleware('auth:sanctum')->group(function () {
 
     // Auth
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/me',      [AuthController::class, 'me']);
+    Route::prefix('auth')->group(function () {
+        Route::post('/logout',     [AuthController::class, 'logout']);
+        Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+        Route::get('/me',          [AuthController::class, 'me']);
+        Route::post('/refresh',    [AuthController::class, 'refresh']);
+    });
 
-    // Perfil de usuario
+    // Perfil
     Route::put('/users/profile', [UserController::class, 'updateProfile']);
 
-    // Espacios — escritura protegida
-    // middleware('role:host') → solo hosts
+    // Espacios — escritura
     Route::middleware('role:host,admin')->group(function () {
         Route::post('/spaces',           [SpaceController::class, 'store']);
         Route::put('/spaces/{space}',    [SpaceController::class, 'update']);
@@ -35,13 +42,26 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Reservas
-    Route::get('/reservations',               [ReservationController::class, 'index']);
-    Route::post('/reservations',              [ReservationController::class, 'store']);
-    Route::get('/reservations/{reservation}', [ReservationController::class, 'show']);
-    Route::patch('/reservations/{reservation}/cancel',
-        [ReservationController::class, 'cancel']);
+    Route::get(
+        '/reservations',
+        [ReservationController::class, 'index']
+    );
+    Route::post(
+        '/reservations',
+        [ReservationController::class, 'store']
+    );
+    Route::get(
+        '/reservations/{reservation}',
+        [ReservationController::class, 'show']
+    );
+    Route::patch(
+        '/reservations/{reservation}/cancel',
+        [ReservationController::class, 'cancel']
+    );
 
     // Reseñas
-    Route::post('/reservations/{reservation}/review',
-        [ReviewController::class, 'store']);
+    Route::post(
+        '/reservations/{reservation}/review',
+        [ReviewController::class, 'store']
+    );
 });

@@ -46,22 +46,19 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Tiempo de expiración de los tokens en minutos
+    // null = nunca expiran (no recomendado en producción)
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 60 * 24 * 7), // 7 días
 
-    /*
-    |--------------------------------------------------------------------------
-    | Sanctum Middleware
-    |--------------------------------------------------------------------------
-    |
-    | When authenticating your first-party SPA with Sanctum you may need to
-    | customize some of the middleware Sanctum uses while processing the
-    | request. You may change the middleware listed below as required.
-    |
-    */
+    // Token para el refresh (más largo)
+    'refresh_expiration' => env('SANCTUM_REFRESH_EXPIRATION', 60 * 24 * 30), // 30 días
+
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 
     'middleware' => [
-        'verify_csrf_token' => App\Http\Middleware\VerifyCsrfToken::class,
-        'encrypt_cookies' => App\Http\Middleware\EncryptCookies::class,
+        'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
+        'encrypt_cookies'      => Illuminate\Cookie\Middleware\EncryptCookies::class,
+        'validate_csrf_token'  => Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
     ],
 
 ];

@@ -14,8 +14,8 @@ class Authenticate extends Middleware
      */
     protected function redirectTo($request)
     {
-        if (! $request->expectsJson()) {
-            return route('login');
-        }
+        // Esta aplicación expone auth por API/Sanctum, así que no debe
+        // intentar redirigir a una ruta web de login inexistente.
+        return null;
     }
 }
