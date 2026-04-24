@@ -3,38 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Space extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'host_id',
-        'name',
-        'description',
-        'city',
-        'address',
-        'country',
-        'price_per_night',
-        'max_guests',
-        'bedrooms',
-        'bathrooms',
-        'amenities',
-        'latitude',
-        'longitude',
-        'is_active',
+        'host_id', 'name', 'description', 'city', 'address',
+        'country', 'price_per_night', 'max_guests', 'bedrooms',
+        'bathrooms', 'amenities', 'latitude', 'longitude', 'is_active',
     ];
+
+    // NUNCA en $fillable: host_id si viene del cliente, is_active
+    // El host_id siempre lo asigna el servidor
+    // Estos campos se asignan explícitamente en el service
 
     protected function casts(): array
     {
         return [
-            // 'array' → convierte el JSON de amenidades a array PHP automáticamente
-            // Al guardar: array → JSON string en BD
-            // Al leer: JSON string → array PHP
             'amenities'       => 'array',
             'is_active'       => 'boolean',
             'price_per_night' => 'decimal:2',
@@ -43,9 +35,37 @@ class Space extends Model
         ];
     }
 
+    // ── Accessors y Mutators (PHP 8 / Laravel 10+ style) ────
+
+    // Mutator: normaliza el nombre al guardarlo
+    // trim elimina espacios, ucwords capitaliza cada palabra
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn(string $value) => $value,
+            set: fn(string $value) => ucwords(strtolower(trim($value)))
+        );
+    }
+
+    // Mutator: normaliza la ciudad
+    protected function city(): Attribute
+    {
+        return Attribute::make(
+            get: fn(string $value) => $value,
+            set: fn(string $value) => ucwords(strtolower(trim($value)))
+        );
+    }
+
+    // Accessor: precio formateado para mostrar en UI
+    protected function formattedPrice(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => '$' . number_format($this->price_per_night, 2)
+        );
+    }
+
     // ── Relaciones ───────────────────────────────────────────
 
-    // BelongsTo → muchos espacios pertenecen a un host
     public function host(): BelongsTo
     {
         return $this->belongsTo(User::class, 'host_id');
@@ -61,12 +81,8 @@ class Space extends Model
         return $this->hasMany(Review::class);
     }
 
-    // ── Scopes — queries reutilizables ───────────────────────
-    // Un scope es un método que añade condiciones a una query
-    // Se usa así: Space::active()->inCity('Antigua')->get()
-    // Equivale a los métodos de Specification en Java
+    // ── Scopes ───────────────────────────────────────────────
 
-    // scopeActive → Space::active()->get()
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -91,15 +107,12 @@ class Space extends Model
         return $query;
     }
 
-    // ── Accessors — atributos calculados ─────────────────────
-    // Se acceden como propiedades: $space->average_rating
-    // Equivale a los @property de Python o getters de Java
+    // ── Accessors calculados ─────────────────────────────────
 
-    // Calcula el rating promedio
     public function getAverageRatingAttribute(): ?float
     {
         $avg = $this->reviews()->avg('rating');
-        return $avg ? round($avg, 1) : null;
+        return $avg ? round((float) $avg, 1) : null;
     }
 
     public function getReviewsCountAttribute(): int
@@ -109,11 +122,10 @@ class Space extends Model
 
     // ── Métodos de dominio ───────────────────────────────────
 
-    public function isAvailableFor(string $checkIn, string $checkOut): bool
-    {
-        // Verifica si hay reservas que se solapan con las fechas pedidas
-        // La lógica de solapamiento: una reserva se solapa si
-        // su check_in < checkOut pedido AND su check_out > checkIn pedido
+    public function isAvailableFor(
+        string $checkIn,
+        string $checkOut
+    ): bool {
         return !$this->reservations()
             ->whereIn('status', ['pending', 'confirmed'])
             ->where('check_in', '<', $checkOut)

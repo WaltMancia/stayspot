@@ -24,6 +24,7 @@ Route::get('/users/{user}/spaces', [UserController::class, 'spaces']);
 Route::middleware('auth:sanctum')->group(function () {
 
     // Auth
+
     Route::prefix('auth')->group(function () {
         Route::post('/logout',     [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
@@ -31,13 +32,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/refresh',    [AuthController::class, 'refresh']);
     });
 
-    // Perfil
     Route::put('/users/profile', [UserController::class, 'updateProfile']);
 
-    // Espacios — escritura
+    // Rutas de host — el orden importa: específicas antes que {space}
     Route::middleware('role:host,admin')->group(function () {
-        Route::post('/spaces',           [SpaceController::class, 'store']);
-        Route::put('/spaces/{space}',    [SpaceController::class, 'update']);
+        Route::get('/spaces/my-spaces', [SpaceController::class, 'mySpaces']);
+        Route::get('/spaces/stats',     [SpaceController::class, 'stats']);
+        Route::post('/spaces',          [SpaceController::class, 'store']);
+        Route::put('/spaces/{space}',   [SpaceController::class, 'update']);
         Route::delete('/spaces/{space}', [SpaceController::class, 'destroy']);
     });
 

@@ -13,7 +13,6 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SpaceController extends Controller
 {
-    // Inyección de dependencias — Laravel resuelve SpaceService automáticamente
     public function __construct(
         private SpaceService $spaceService
     ) {}
@@ -21,16 +20,11 @@ class SpaceController extends Controller
     // GET /api/spaces
     public function index(Request $request): AnonymousResourceCollection
     {
-        // $request->query() equivale a req.query en Express
         $spaces = $this->spaceService->search($request->query());
-
-        // SpaceResource::collection() aplica el resource a cada elemento
         return SpaceResource::collection($spaces);
     }
 
     // GET /api/spaces/{space}
-    // Laravel resuelve automáticamente el modelo por su ID (Route Model Binding)
-    // Si no existe → 404 automático
     public function show(int $id): SpaceResource
     {
         $space = $this->spaceService->findWithDetails($id);
@@ -40,8 +34,6 @@ class SpaceController extends Controller
     // POST /api/spaces
     public function store(StoreSpaceRequest $request): JsonResponse
     {
-        // validated() devuelve solo los datos que pasaron la validación
-        // Nunca uses $request->all() — podría incluir campos no esperados
         $space = $this->spaceService->createSpace(
             $request->validated(),
             $request->user()
@@ -55,11 +47,10 @@ class SpaceController extends Controller
     // PUT /api/spaces/{space}
     public function update(
         UpdateSpaceRequest $request,
-        Space $space    // Route Model Binding — Laravel busca el espacio por ID
+        Space $space
     ): SpaceResource {
-        // authorize() verifica con la Policy que el usuario puede editar este espacio
-        $this->authorize('update', $space);
-
+        // La autorización ya fue verificada en UpdateSpaceRequest::authorize()
+        // No necesitamos llamar a $this->authorize() aquí
         $updated = $this->spaceService->updateSpace(
             $space,
             $request->validated()
@@ -71,10 +62,38 @@ class SpaceController extends Controller
     // DELETE /api/spaces/{space}
     public function destroy(Space $space): JsonResponse
     {
+        // Verificamos manualmente con la Policy
         $this->authorize('delete', $space);
+
         $this->spaceService->deleteSpace($space);
 
-        // 204 No Content — éxito sin cuerpo de respuesta
-        return response()->json(null, 204);
+        return response()->json([
+            'message' => 'Espacio eliminado correctamente',
+        ], 200);
+    }
+
+    // GET /api/spaces/my-spaces — espacios del host autenticado
+    public function mySpaces(Request $request): AnonymousResourceCollection
+    {
+        $spaces = Space::query()
+            ->where('host_id', $request->user()->id)
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->withCount([
+                'reservations',
+                'reservations as pending_reservations_count'
+                => fn($q) => $q->where('status', 'pending'),
+            ])
+            ->latest()
+            ->paginate(12);
+
+        return SpaceResource::collection($spaces);
+    }
+
+    // GET /api/spaces/stats — estadísticas del host
+    public function stats(Request $request): JsonResponse
+    {
+        $stats = $this->spaceService->getHostStats($request->user());
+        return response()->json($stats);
     }
 }
