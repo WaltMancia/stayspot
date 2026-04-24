@@ -11,49 +11,49 @@ class ReservationFactory extends Factory
 {
     public function definition(): array
     {
-        // Carbon es la librería de fechas de Laravel
-        // Equivale a date-fns en JavaScript
-        $checkIn  = Carbon::now()->addDays(rand(1, 30));
+        $checkIn  = Carbon::now()->addDays(rand(5, 30));
         $nights   = rand(1, 7);
         $checkOut = $checkIn->copy()->addDays($nights);
-
-        $pricePerNight = fake()->randomFloat(2, 50, 300);
+        $price    = fake()->randomFloat(2, 50, 300);
 
         return [
-            'space_id'       => Space::factory(),
-            'guest_id'       => User::factory(),
-            'check_in'       => $checkIn->format('Y-m-d'),
-            'check_out'      => $checkOut->format('Y-m-d'),
-            'guests_count'   => rand(1, 4),
-            'price_per_night' => $pricePerNight,
-            'total_price'    => $pricePerNight * $nights,
-            'nights'         => $nights,
-            'status'         => fake()->randomElement([
-                'pending',
-                'confirmed',
-                'completed'
-            ]),
+            'space_id'        => Space::factory(),
+            'guest_id'        => User::factory(),
+            'check_in'        => $checkIn->format('Y-m-d'),
+            'check_out'       => $checkOut->format('Y-m-d'),
+            'guests_count'    => rand(1, 4),
+            'price_per_night' => $price,
+            'total_price'     => $price * $nights,
+            'nights'          => $nights,
+            'status'          => 'confirmed',
         ];
+    }
+
+    public function pending(): static
+    {
+        return $this->state(['status' => 'pending']);
     }
 
     public function confirmed(): static
     {
-        return $this->state(fn(array $attributes) => [
-            'status' => 'confirmed',
-        ]);
+        return $this->state(['status' => 'confirmed']);
     }
 
     public function completed(): static
     {
-        // Reservas completadas son del pasado
         $checkIn = Carbon::now()->subDays(rand(10, 60));
         $nights  = rand(1, 7);
 
-        return $this->state(fn(array $attributes) => [
+        return $this->state([
             'check_in'  => $checkIn->format('Y-m-d'),
             'check_out' => $checkIn->copy()->addDays($nights)->format('Y-m-d'),
             'nights'    => $nights,
             'status'    => 'completed',
         ]);
+    }
+
+    public function cancelled(): static
+    {
+        return $this->state(['status' => 'cancelled']);
     }
 }

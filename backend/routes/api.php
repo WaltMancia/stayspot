@@ -7,23 +7,33 @@ use App\Http\Controllers\SpaceController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Rutas públicas ────────────────────────────────────────────
+// ── Públicas ──────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::post('/login',    [AuthController::class, 'login'])
+        ->middleware('throttle:login');
 });
 
 // Espacios — lectura pública
 Route::get('/spaces',         [SpaceController::class, 'index']);
 Route::get('/spaces/{space}', [SpaceController::class, 'show']);
 
-// Espacios de un host — público
+// Disponibilidad y precio — públicos para que el visitante
+// pueda ver fechas antes de registrarse
+Route::get(
+    '/spaces/{space}/availability',
+    [ReservationController::class, 'availability']
+);
+Route::get(
+    '/spaces/{space}/price-estimate',
+    [ReservationController::class, 'priceEstimate']
+);
+
+// Perfil público de host
 Route::get('/users/{user}/spaces', [UserController::class, 'spaces']);
 
-// ── Rutas protegidas ──────────────────────────────────────────
+// ── Protegidas ────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
-
-    // Auth
 
     Route::prefix('auth')->group(function () {
         Route::post('/logout',     [AuthController::class, 'logout']);
@@ -34,7 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::put('/users/profile', [UserController::class, 'updateProfile']);
 
-    // Rutas de host — el orden importa: específicas antes que {space}
+    // Espacios — escritura
     Route::middleware('role:host,admin')->group(function () {
         Route::get('/spaces/my-spaces', [SpaceController::class, 'mySpaces']);
         Route::get('/spaces/stats',     [SpaceController::class, 'stats']);
@@ -56,6 +66,13 @@ Route::middleware('auth:sanctum')->group(function () {
         '/reservations/{reservation}',
         [ReservationController::class, 'show']
     );
+
+    Route::patch(
+        '/reservations/{reservation}/confirm',
+        [ReservationController::class, 'confirm']
+    )
+        ->middleware('role:host,admin');
+
     Route::patch(
         '/reservations/{reservation}/cancel',
         [ReservationController::class, 'cancel']
