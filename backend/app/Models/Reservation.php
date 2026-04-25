@@ -23,18 +23,27 @@ class Reservation extends Model
         'nights',
         'status',
         'stripe_payment_id',
+        'stripe_payment_intent_id',
         'stripe_payment_status',
+        'paid_at',
         'cancellation_reason',
     ];
 
     protected function casts(): array
     {
         return [
-            'check_in'        => 'date',  // Carbon instance automáticamente
+            'check_in'        => 'date',
             'check_out'       => 'date',
             'price_per_night' => 'decimal:2',
             'total_price'     => 'decimal:2',
+            'paid_at'         => 'datetime',
         ];
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === 'confirmed'
+            && $this->stripe_payment_status === 'succeeded';
     }
 
     // ── Relaciones ───────────────────────────────────────────

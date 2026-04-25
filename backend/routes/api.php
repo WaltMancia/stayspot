@@ -1,11 +1,17 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SpaceController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+
+// ── Webhook — FUERA de cualquier middleware ───────────────────
+// Stripe necesita el body sin parsear para verificar la firma
+Route::post('/webhooks/stripe', [PaymentController::class, 'handleWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // ── Públicas ──────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -14,12 +20,9 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:login');
 });
 
-// Espacios — lectura pública
 Route::get('/spaces',         [SpaceController::class, 'index']);
 Route::get('/spaces/{space}', [SpaceController::class, 'show']);
 
-// Disponibilidad y precio — públicos para que el visitante
-// pueda ver fechas antes de registrarse
 Route::get(
     '/spaces/{space}/availability',
     [ReservationController::class, 'availability']
@@ -29,7 +32,6 @@ Route::get(
     [ReservationController::class, 'priceEstimate']
 );
 
-// Perfil público de host
 Route::get('/users/{user}/spaces', [UserController::class, 'spaces']);
 
 // ── Protegidas ────────────────────────────────────────────────
@@ -44,7 +46,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::put('/users/profile', [UserController::class, 'updateProfile']);
 
-    // Espacios — escritura
     Route::middleware('role:host,admin')->group(function () {
         Route::get('/spaces/my-spaces', [SpaceController::class, 'mySpaces']);
         Route::get('/spaces/stats',     [SpaceController::class, 'stats']);
@@ -53,7 +54,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/spaces/{space}', [SpaceController::class, 'destroy']);
     });
 
-    // Reservas
     Route::get(
         '/reservations',
         [ReservationController::class, 'index']
@@ -66,19 +66,26 @@ Route::middleware('auth:sanctum')->group(function () {
         '/reservations/{reservation}',
         [ReservationController::class, 'show']
     );
-
     Route::patch(
         '/reservations/{reservation}/confirm',
         [ReservationController::class, 'confirm']
     )
         ->middleware('role:host,admin');
-
     Route::patch(
         '/reservations/{reservation}/cancel',
         [ReservationController::class, 'cancel']
     );
 
-    // Reseñas
+    // Pagos
+    Route::post(
+        '/reservations/{reservation}/payment-intent',
+        [PaymentController::class, 'createPaymentIntent']
+    );
+    Route::get(
+        '/reservations/{reservation}/payment-status',
+        [PaymentController::class, 'paymentStatus']
+    );
+
     Route::post(
         '/reservations/{reservation}/review',
         [ReviewController::class, 'store']

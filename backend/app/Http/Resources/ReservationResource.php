@@ -27,6 +27,10 @@ class ReservationResource extends JsonResource
             'space' => new SpaceResource($this->whenLoaded('space')),
             'guest' => new UserResource($this->whenLoaded('guest')),
             'review' => new ReviewResource($this->whenLoaded('review')),
+
+            'stripe_payment_status' => $this->stripe_payment_status,
+            'is_paid'               => $this->isPaid(),
+            'paid_at'               => $this->paid_at?->toISOString(),
         ];
     }
 }
