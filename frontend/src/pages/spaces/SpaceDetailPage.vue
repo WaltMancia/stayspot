@@ -2,11 +2,8 @@
   <div class="max-w-5xl mx-auto px-4 py-8 space-y-8">
 
     <!-- Botón volver -->
-    <button
-      @click="$router.push('/espacios')"
-      class="flex items-center gap-2 text-sm text-gray-500
-             hover:text-gray-900 transition-colors"
-    >
+    <button @click="$router.push('/espacios')" class="flex items-center gap-2 text-sm text-gray-500
+             hover:text-gray-900 transition-colors">
       ← Volver a espacios
     </button>
 
@@ -19,12 +16,7 @@
 
       <!-- Imagen principal -->
       <div class="aspect-video rounded-3xl overflow-hidden bg-gray-100">
-        <img
-          v-if="space.image_url"
-          :src="space.image_url"
-          :alt="space.name"
-          class="w-full h-full object-cover"
-        >
+        <img v-if="space.image_url" :src="space.image_url" :alt="space.name" class="w-full h-full object-cover">
         <div v-else class="w-full h-full flex items-center justify-center">
           <span class="text-8xl">🏠</span>
         </div>
@@ -50,10 +42,7 @@
               <span>👥 Hasta {{ space.max_guests }} huéspedes</span>
               <span>🛏️ {{ space.bedrooms }} habitaciones</span>
               <span>🚿 {{ space.bathrooms }} baños</span>
-              <div
-                v-if="space.reviews_avg_rating"
-                class="flex items-center gap-1"
-              >
+              <div v-if="space.reviews_avg_rating" class="flex items-center gap-1">
                 <span class="text-yellow-400">★</span>
                 <span class="font-semibold text-gray-900">
                   {{ Number(space.reviews_avg_rating).toFixed(1) }}
@@ -66,10 +55,7 @@
           </div>
 
           <!-- Anfitrión -->
-          <div
-            v-if="space.host"
-            class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl"
-          >
+          <div v-if="space.host" class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
             <div class="w-14 h-14 bg-gray-200 rounded-full flex
                         items-center justify-center text-2xl flex-shrink-0">
               {{ space.host.name?.charAt(0) }}
@@ -96,11 +82,8 @@
               Servicios y amenidades
             </h2>
             <div class="grid grid-cols-2 gap-2">
-              <div
-                v-for="amenity in space.amenities"
-                :key="amenity"
-                class="flex items-center gap-2 text-sm text-gray-600"
-              >
+              <div v-for="amenity in space.amenities" :key="amenity"
+                class="flex items-center gap-2 text-sm text-gray-600">
                 <span class="text-emerald-500">✓</span>
                 {{ amenity }}
               </div>
@@ -108,53 +91,16 @@
           </div>
 
           <!-- Reseñas -->
-          <div v-if="space.reviews?.length">
-            <h2 class="font-semibold text-gray-900 text-lg mb-4">
-              Reseñas
-            </h2>
-            <div class="space-y-4">
-              <div
-                v-for="review in space.reviews"
-                :key="review.id"
-                class="p-4 bg-gray-50 rounded-2xl"
-              >
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="w-9 h-9 bg-gray-200 rounded-full flex
-                              items-center justify-center text-sm font-bold">
-                    {{ review.guest?.name?.charAt(0) }}
-                  </div>
-                  <div>
-                    <p class="font-medium text-gray-900 text-sm">
-                      {{ review.guest?.name }}
-                    </p>
-                    <div class="flex text-yellow-400 text-xs">
-                      <span v-for="n in review.rating" :key="n">★</span>
-                      <span
-                        v-for="n in (5 - review.rating)"
-                        :key="`empty-${n}`"
-                        class="text-gray-300"
-                      >
-                        ★
-                      </span>
-                    </div>
-                  </div>
-                  <p class="text-xs text-gray-400 ml-auto">
-                    {{ formatDate(review.created_at) }}
-                  </p>
-                </div>
-                <p class="text-sm text-gray-600">{{ review.comment }}</p>
-              </div>
-            </div>
+          <div>
+            <h2 class="font-semibold text-gray-900 text-lg mb-4">Reseñas</h2>
+            <SpaceReviews :reviews="space.reviews || []" />
           </div>
         </div>
 
         <!-- Columna derecha — Formulario de reserva -->
         <div class="lg:col-span-1">
           <div class="sticky top-6">
-            <ReservationWidget
-              :space="space"
-              @reserved="handleReserved"
-            />
+            <ReservationWidget :space="space" @reserved="handleReserved" />
           </div>
         </div>
       </div>
@@ -164,18 +110,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter }      from 'vue-router'
-import { useSpacesStore }           from '../../stores/spaces.store.js'
-import ReservationWidget  from '../../components/reservation/ReservationWidget.vue'
-import AppSpinner         from '../../components/ui/AppSpinner.vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useSpacesStore } from '../../stores/spaces.store.js'
+import ReservationWidget from '../../components/reservation/ReservationWidget.vue'
+import AppSpinner from '../../components/ui/AppSpinner.vue'
 import { useGlobalToast } from '../../composables/useToast.js'
+import SpaceReviews from '../../components/space/SpaceReviews.vue'
 
-const route  = useRoute()
+const route = useRoute()
 const router = useRouter()
-const store  = useSpacesStore()
-const toast  = useGlobalToast()
+const store = useSpacesStore()
+const toast = useGlobalToast()
 
-const space   = ref(null)
+const space = ref(null)
 const loading = ref(true)
 
 const hostSince = computed(() => {

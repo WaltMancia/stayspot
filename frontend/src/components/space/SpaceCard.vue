@@ -1,41 +1,37 @@
 <template>
-  <div
-    class="group bg-white rounded-2xl border border-gray-100 overflow-hidden
+  <div class="group bg-white rounded-2xl border border-gray-100 overflow-hidden
            shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
-    @click="$router.push(`/espacios/${space.id}`)"
-  >
+    @click="$router.push(`/espacios/${space.id}`)">
     <!-- Imagen -->
     <div class="relative aspect-video overflow-hidden bg-gray-100">
-      <img
-        v-if="space.image_url"
-        :src="space.image_url"
-        :alt="space.name"
-        class="w-full h-full object-cover group-hover:scale-105
-               transition-transform duration-500"
-      >
+      <img v-if="space.image_url" :src="space.image_url" :alt="space.name" class="w-full h-full object-cover group-hover:scale-105
+               transition-transform duration-500">
       <div v-else class="w-full h-full flex items-center justify-center">
         <span class="text-5xl">🏠</span>
       </div>
 
       <!-- Badge de disponibilidad -->
-      <AppBadge
-        v-if="space.available_spots === 0"
-        variant="danger"
-        class="absolute top-3 left-3"
-      >
+      <AppBadge v-if="space.available_spots === 0" variant="danger" class="absolute top-3 left-3">
         Sin disponibilidad
       </AppBadge>
 
       <!-- Rating -->
-      <div
-        v-if="space.reviews_avg_rating"
-        class="absolute top-3 right-3 flex items-center gap-1
-               bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg text-sm"
-      >
-        <span class="text-yellow-400">★</span>
-        <span class="font-semibold text-gray-900">
-          {{ Number(space.reviews_avg_rating).toFixed(1) }}
-        </span>
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-xl font-bold text-gray-900">
+            {{ formatPrice(space.price_per_night) }}
+          </span>
+          <span class="text-sm text-gray-400"> / noche</span>
+        </div>
+
+        <div v-if="space.reviews_avg_rating" class="flex items-center gap-1 text-sm">
+          <span class="text-yellow-400">★</span>
+          <span class="font-semibold text-gray-900">
+            {{ Number(space.reviews_avg_rating).toFixed(1) }}
+          </span>
+          <span class="text-gray-400 text-xs">({{ space.reviews_count }})</span>
+        </div>
+        <span v-else class="text-xs text-gray-400">Sin reseñas</span>
       </div>
     </div>
 
