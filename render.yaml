@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: stayspot-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    branch: main
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        sync: false          # sync: false = lo ingresas manualmente en Render
+      - key: APP_URL
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: stayspot-mysql
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: stayspot-mysql
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: stayspot-mysql
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: stayspot-mysql
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: stayspot-mysql
+          property: password
+      - key: PUSHER_APP_ID
+        sync: false
+      - key: PUSHER_APP_KEY
+        sync: false
+      - key: PUSHER_APP_SECRET
+        sync: false
+      - key: PUSHER_APP_CLUSTER
+        value: us2
+      - key: STRIPE_SECRET
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESET_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+databases:
+  - name: stayspot-mysql
+    plan: free
+    databaseName: stayspot
